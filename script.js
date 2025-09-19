@@ -360,7 +360,7 @@ document.getElementById('f-value-decide-btn')?.addEventListener('click', async (
   const bpmStatus = document.getElementById('bpm-status');
   let bpmStream = null;
   let bpmLoopId = null;
-  const defaultBpm = 60;
+  const defaultBpm = 80;
 
   // 制限
   const BPM_MIN = 60;
