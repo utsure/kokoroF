@@ -24,9 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
     start: "はじめる",
     fInputTitle: "今の心の状態に合わせて<br>円を広げたり縮めたりしてください",
     fHint1: "F値が小さい=開放的",
-    fHint2: "F値が大きい＝集中している",
+    fHint2: "F値が大きい＝閉鎖的",
     decide: "決定",
-    bpmTitle: "ココロのシャッタースピード",
+    bpmTitle: "ココロシャッタースピード",
     bpmPrep_html: 'カメラに<strong>指先を軽く当てて</strong>ください<br>赤みの変化から心拍数を測定します',
     bpmReady: "準備ができたら計測開始を押してください",
     bpmStart: "計測開始",
@@ -642,7 +642,7 @@ function hideSaveBtn() { viewerNoteSave?.classList.remove('is-visible'); }
 function buildMetaText(it, i, total){
   // 撮影順番号：古いほど小さい番号 → oldest=1, newest=total
   const order = total - i;
-  const bpmStr = (typeof it.bpm === 'number' && it.bpm >= 0) ? `${it.bpm} BPM` : `--- BPM`;
+  const bpmStr = (typeof it.bpm === 'number' && it.bpm >= 0) ? `${it.bpm} BPM` : `BPM ---`;
   return `#${order}　F${Math.round(it.f)}　${bpmStr}`;
 }
 
