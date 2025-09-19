@@ -499,7 +499,7 @@ document.getElementById('f-value-decide-btn')?.addEventListener('click', async (
   }
   const sleep = ms => new Promise(res => setTimeout(res, ms));
   
-  // ⑤ 保存画像向け：方向性モーションブラー（少ないパスで派手＆軽量）
+ // ⑤ 保存画像向け：方向性モーションブラー（少ないパスで派手＆軽量）
 function applyMotionBlurAfterCapture(ctx, video, w, h, bpm, facing, brightnessFilterCSS) {
   const B = Math.max(60, Math.min(100, bpm || 60));
   const t = (100 - B) / 40;              // 60→1, 100→0
@@ -510,12 +510,18 @@ function applyMotionBlurAfterCapture(ctx, video, w, h, bpm, facing, brightnessFi
   const dxUnit = Math.cos(angle);
   const dyUnit = Math.sin(angle);
 
-  // Canvas filterが使えるなら、明るさ/コントラストも同時適用
   const useCanvasFilter = CANVAS_FILTER_SUPPORTED && brightnessFilterCSS;
   const prevFilter = ctx.filter;
 
+  // 💡ここでBPMに応じてblur半径を決定（低BPM→大きい）
+  const blurRadius =  Math.round(5 * t); // 60BPM→5px、100BPM→0px
+  if (blurRadius > 0) {
+    ctx.filter = `blur(${blurRadius}px)` + (useCanvasFilter ? ` ${brightnessFilterCSS}` : '');
+  } else if (useCanvasFilter) {
+    ctx.filter = brightnessFilterCSS;
+  }
+
   ctx.globalAlpha = 1 / (passes + 1);
-  if (useCanvasFilter) ctx.filter = brightnessFilterCSS;
 
   for (let i = 1; i <= passes; i++) {
     const k = i / passes;
@@ -534,7 +540,7 @@ function applyMotionBlurAfterCapture(ctx, video, w, h, bpm, facing, brightnessFi
   }
 
   ctx.globalAlpha = 1;
-  if (useCanvasFilter) ctx.filter = prevFilter || 'none';
+  ctx.filter = prevFilter || 'none';
 }
 
 
