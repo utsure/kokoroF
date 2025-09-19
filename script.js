@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ====== 画面管理 ======
   const screens = {
     initial: document.getElementById('screen-initial'),
-    // screen-introduction は削除
+    // 'introduction' は削除
     fvalue: document.getElementById('screen-fvalue-input'),
     bpm: document.getElementById('screen-bpm'),
     camera: document.getElementById('screen-camera'),
@@ -23,9 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
     splashTagline: "あなたの心のシャッターを切る",
     start: "はじめる",
     next: "次へ",
-    // howtoTitle/howtoText は削除
+    // howtoTitle/howtoText は不要になりましたが、コードの構造を維持するため残しておきます
     howtoTitle: "使い方",
-    howtoText: "アプリの使用方法と、ニックネーム・ルームコード入力に関する説明をここに書きます。",
+    howtoText: "あなたの名前（ニックネーム）とルームコードを<br>入力してください。（任意）", 
     fInputTitle: "今の心の状態に合わせて<br>円を広げたり縮めたりしてください",
     fHint1: "F値が小さい=開放的",
     fHint2: "F値が大きい＝集中している",
@@ -212,9 +212,9 @@ function updatePreviewFilter(){
   }
 
   // ====== 画面遷移 ======
-  // 修正: initial から fvalue へ直接遷移
+  // 修正: initial-next-btn の遷移先を 'introduction' から 'fvalue' に変更
   document.getElementById('initial-next-btn')?.addEventListener('click', () => showScreen('fvalue'));
-  // document.getElementById('intro-next-btn')?.addEventListener('click', () => showScreen('fvalue')); // 削除
+  // document.getElementById('intro-next-btn')?.addEventListener('click', () => showScreen('fvalue')); // 画面2ボタンのリスナーは削除
 
   // ====== F値（ピンチ操作） ======
   const apertureControl = document.querySelector('.aperture-control');
@@ -302,7 +302,7 @@ document.addEventListener('touchstart', e => {
   if (!screens.fvalue?.classList.contains('active')) return;
   if (e.touches.length === 2) {
     e.preventDefault();
-    isPinching = true;                           // ← 追加
+    isPinching = true;
     if (smoothRafId) { cancelAnimationFrame(smoothRafId); smoothRafId = null; }
     lastPinchDistance = Math.hypot(
       e.touches[0].pageX - e.touches[1].pageX,
@@ -325,10 +325,10 @@ document.addEventListener('touchmove', e => {
     const pinchPower = Math.log2(scale);
 
     // ★感度を控えめに（以前より小さめ）
-    const SENS = 10;                          // 9〜12がおすすめ
+    const SENS = 10;
     const nextTarget = targetFValue - pinchPower * SENS;
 
-    setTargetFValue(nextTarget);              // ← ピンチ中は即追従で余韻ナシ
+    setTargetFValue(nextTarget);
     lastPinchDistance = dist;
   }
 }, { passive: false });
@@ -337,7 +337,7 @@ document.addEventListener('touchend', e => {
   if (!screens.fvalue?.classList.contains('active')) return;
   if (e.touches.length < 2) {
     lastPinchDistance = 0;
-    isPinching = false;                       // ← 指を離した
+    isPinching = false;
     document.documentElement.style.touchAction = '';
 
     // ★スナップして完全停止（余韻なし）
@@ -454,10 +454,9 @@ document.getElementById('f-value-decide-btn')?.addEventListener('click', async (
         bpmStatus.textContent = T.bpmResult(clamped);
         setTimeout(async () => {
           showScreen('camera');
-          updateCameraHudF();           // ★これで統一
+          updateCameraHudF();
           updateCameraHudBpm();
-          applyPreviewBlur(lastMeasuredBpm);  
-
+          applyPreviewBlur(lastMeasuredBpm); 
           
           await startCamera('environment');
         }, 800);
@@ -544,20 +543,15 @@ function applyMotionBlurAfterCapture(ctx, video, w, h, bpm, facing, brightnessFi
 }
 
 
-  // ====== ファイル名（ニックネーム/ルームコード要素がなくなったため、固定値か空白に） ======
+  // ====== ファイル名（ニックネーム/ルームコード要素がなくなったため、仮の文字列を使用） ======
   function safeNum(n) { return String(n).replace('.', '-'); }
   function buildFilename({ fValue, bpm, when = new Date(), who = 'anon', room = 'room' }) {
-    // ニックネーム/ルームコードの入力要素がないため、仮の文字列を使用
-    const participantName = 'User'; // 仮の値
-    const roomCode = 'R'; // 仮の値
-
+    // ニックネーム/ルームコードの入力要素がないため、ファイル名から除外
     const pad = (x) => x.toString().padStart(2, '0');
     const y = when.getFullYear(), m = pad(when.getMonth()+1), d = pad(when.getDate());
     const hh = pad(when.getHours()), mm = pad(when.getMinutes()), ss = pad(when.getSeconds());
     const fStr = String(Math.round(Number(fValue)));
     const bpmStr = (bpm == null || isNaN(bpm)) ? '--' : Math.round(bpm);
-    // ファイル名からニックネームとルームコードを削除/変更
-    // return `cocoro_${y}-${m}-${d}_${hh}-${mm}-${ss}_${roomCode}_${participantName}_F${fStr}_BPM${bpmStr}.png`;
     return `cocoro_${y}-${m}-${d}_${hh}-${mm}-${ss}_F${fStr}_BPM${bpmStr}.png`;
   }
 
@@ -737,14 +731,14 @@ function openModal(){
   if (!galleryModal) return;
   galleryModal.classList.remove('hidden');
   galleryModal.setAttribute('aria-hidden','false');
-  hideSaveBtn();                 // ← ここだけに統一
+  hideSaveBtn();
 }
 
 function closeModal(){
   if (!galleryModal) return;
   galleryModal.classList.add('hidden');
   galleryModal.setAttribute('aria-hidden','true');
-  hideSaveBtn();                 // ← ここだけに統一
+  hideSaveBtn();
   AlbumIdx.current = -1;
 }
 
@@ -758,24 +752,24 @@ function openViewer(i){
   if (!list.length) return;
   if (!viewer || !viewerImg || !viewerMeta) { window.open(list[i].src, '_blank'); return; }
   idx = Math.max(0, Math.min(i, list.length-1));
-  AlbumIdx.current = idx;                        // 共有インデックス更新
+  AlbumIdx.current = idx;
   const it = list[idx];
   viewerImg.src = it.src;
 
   viewerMeta.textContent = buildMetaText(it, idx, list.length);
   resetViewerTransform();
-  viewer.setAttribute('aria-hidden', 'false');   // 開く
+  viewer.setAttribute('aria-hidden', 'false');
 
   if (viewerNote) viewerNote.value = it.note || '';
-  showSaveBtn();                                  // 拡大時だけ表示
+  showSaveBtn();
 }
 
 function closeViewer(){
   if (viewer){
-    viewer.setAttribute('aria-hidden', 'true');  // 閉じる
+    viewer.setAttribute('aria-hidden', 'true');
   }
   AlbumIdx.current = -1;
-  hideSaveBtn();                                  // 必ず隠す
+  hideSaveBtn();
 }
 
 // UI結線
@@ -784,7 +778,7 @@ galleryBackdrop?.addEventListener('click', closeModal);
 galleryCloseBtn?.addEventListener('click', closeModal);
 
 viewerClose && (viewerClose.onclick = () => closeViewer());
-viewerPrev && (viewerPrev.prev  = () => { if (idx>0) openViewer(idx-1); });
+viewerPrev && (viewerPrev.onclick  = () => { if (idx>0) openViewer(idx-1); });
 viewerNext && (viewerNext.onclick  = () => { if (idx<list.length-1) openViewer(idx+1); });
 
 window.addEventListener('keydown', (e) => {
@@ -846,7 +840,7 @@ viewerWrap && viewerWrap.addEventListener('touchstart', e => {
   closeModal,
   openViewer,
   save,
-  get list() { return list; }   // ← これ！
+  get list() { return list; }
 };
   })();
 
@@ -929,7 +923,7 @@ let lat = null, lon = null;
 // ※ どうしても付けたい場合は別ボタンなど“ユーザー操作時”にだけ取得する
 
 // データURL（アルバム保存用）
-const JPEG_QUALITY = 0.85;               // 0.8〜0.9くらいが実用
+const JPEG_QUALITY = 0.85;
 const dataUrl = captureCanvas.toDataURL('image/jpeg', JPEG_QUALITY);
 
 // アルバムへ即追加（永続化）
@@ -990,7 +984,7 @@ Album.add(item);
   }
 
   // ====== 初期表示 ======
-  Album.load();                 // ← 過去の写真を復元（新旧フォーマット対応）
+  Album.load();
   // ギャラリーを開くボタンは Album 側で結線済み
   showScreen('initial');
 });
