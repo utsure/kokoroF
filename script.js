@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ====== 画面管理 ======
   const screens = {
     initial: document.getElementById('screen-initial'),
-    // 'introduction' は削除
+    // introduction: document.getElementById('screen-introduction'), // ← 削除
     fvalue: document.getElementById('screen-fvalue-input'),
     bpm: document.getElementById('screen-bpm'),
     camera: document.getElementById('screen-camera'),
@@ -23,9 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
     splashTagline: "あなたの心のシャッターを切る",
     start: "はじめる",
     next: "次へ",
-    // howtoTitle/howtoText は不要になりましたが、コードの構造を維持するため残しておきます
-    howtoTitle: "使い方",
-    howtoText: "あなたの名前（ニックネーム）とルームコードを<br>入力してください。（任意）", 
+    // howtoTitle: "名前とルームコードの入力", // ← 削除
+    // howtoText: "あなたの名前（ニックネーム）とルームコードを<br>入力してください。（任意）", // ← 削除
     fInputTitle: "今の心の状態に合わせて<br>円を広げたり縮めたりしてください",
     fHint1: "F値が小さい=開放的",
     fHint2: "F値が大きい＝集中している",
@@ -70,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const rawCanvas = document.getElementById('canvas');
 
 const previewCanvas = document.createElement('canvas');
-previewCanvas.id = 'preview-canvas';
+previewCanvas.id = 'preview-canvas';           // ★これを追加
 const previewCtx = previewCanvas.getContext('2d');
 if (screens.camera) {
   // CSSに任せるので style は最小限（z-indexはCSSに合わせ1でもOK）
@@ -212,9 +211,8 @@ function updatePreviewFilter(){
   }
 
   // ====== 画面遷移 ======
-  // 修正: initial-next-btn の遷移先を 'introduction' から 'fvalue' に変更
-  document.getElementById('initial-next-btn')?.addEventListener('click', () => showScreen('fvalue'));
-  // document.getElementById('intro-next-btn')?.addEventListener('click', () => showScreen('fvalue')); // 画面2ボタンのリスナーは削除
+  document.getElementById('initial-next-btn')?.addEventListener('click', () => showScreen('fvalue')); // ← introductionをスキップ
+  // document.getElementById('intro-next-btn')?.addEventListener('click', () => showScreen('fvalue')); // ← 削除
 
   // ====== F値（ピンチ操作） ======
   const apertureControl = document.querySelector('.aperture-control');
@@ -302,7 +300,7 @@ document.addEventListener('touchstart', e => {
   if (!screens.fvalue?.classList.contains('active')) return;
   if (e.touches.length === 2) {
     e.preventDefault();
-    isPinching = true;
+    isPinching = true;                           // ← 追加
     if (smoothRafId) { cancelAnimationFrame(smoothRafId); smoothRafId = null; }
     lastPinchDistance = Math.hypot(
       e.touches[0].pageX - e.touches[1].pageX,
@@ -325,10 +323,10 @@ document.addEventListener('touchmove', e => {
     const pinchPower = Math.log2(scale);
 
     // ★感度を控えめに（以前より小さめ）
-    const SENS = 10;
+    const SENS = 10;                          // 9〜12がおすすめ
     const nextTarget = targetFValue - pinchPower * SENS;
 
-    setTargetFValue(nextTarget);
+    setTargetFValue(nextTarget);              // ← ピンチ中は即追従で余韻ナシ
     lastPinchDistance = dist;
   }
 }, { passive: false });
@@ -337,7 +335,7 @@ document.addEventListener('touchend', e => {
   if (!screens.fvalue?.classList.contains('active')) return;
   if (e.touches.length < 2) {
     lastPinchDistance = 0;
-    isPinching = false;
+    isPinching = false;                       // ← 指を離した
     document.documentElement.style.touchAction = '';
 
     // ★スナップして完全停止（余韻なし）
@@ -454,9 +452,10 @@ document.getElementById('f-value-decide-btn')?.addEventListener('click', async (
         bpmStatus.textContent = T.bpmResult(clamped);
         setTimeout(async () => {
           showScreen('camera');
-          updateCameraHudF();
+          updateCameraHudF();           // ★これで統一
           updateCameraHudBpm();
-          applyPreviewBlur(lastMeasuredBpm); 
+          applyPreviewBlur(lastMeasuredBpm);  
+
           
           await startCamera('environment');
         }, 800);
@@ -543,16 +542,16 @@ function applyMotionBlurAfterCapture(ctx, video, w, h, bpm, facing, brightnessFi
 }
 
 
-  // ====== ファイル名（ニックネーム/ルームコード要素がなくなったため、仮の文字列を使用） ======
+  // ====== ファイル名 ======
   function safeNum(n) { return String(n).replace('.', '-'); }
-  function buildFilename({ fValue, bpm, when = new Date(), who = 'anon', room = 'room' }) {
-    // ニックネーム/ルームコードの入力要素がないため、ファイル名から除外
+  function buildFilename({ fValue, bpm, when = new Date() }) { // ← whoとroomを削除
     const pad = (x) => x.toString().padStart(2, '0');
     const y = when.getFullYear(), m = pad(when.getMonth()+1), d = pad(when.getDate());
     const hh = pad(when.getHours()), mm = pad(when.getMinutes()), ss = pad(when.getSeconds());
     const fStr = String(Math.round(Number(fValue)));
     const bpmStr = (bpm == null || isNaN(bpm)) ? '--' : Math.round(bpm);
-    return `cocoro_${y}-${m}-${d}_${hh}-${mm}-${ss}_F${fStr}_BPM${bpmStr}.png`;
+    // return `cocoro_${y}-${m}-${d}_${hh}-${mm}-${ss}_${room}_${who}_F${fStr}_BPM${bpmStr}.png`;
+    return `cocoro_${y}-${m}-${d}_${hh}-${mm}-${ss}_F${fStr}_BPM${bpmStr}.png`; // ← ファイル名から_room_who_を削除
   }
 
   // カメラ切替
@@ -731,14 +730,14 @@ function openModal(){
   if (!galleryModal) return;
   galleryModal.classList.remove('hidden');
   galleryModal.setAttribute('aria-hidden','false');
-  hideSaveBtn();
+  hideSaveBtn();                 // ← ここだけに統一
 }
 
 function closeModal(){
   if (!galleryModal) return;
   galleryModal.classList.add('hidden');
   galleryModal.setAttribute('aria-hidden','true');
-  hideSaveBtn();
+  hideSaveBtn();                 // ← ここだけに統一
   AlbumIdx.current = -1;
 }
 
@@ -752,24 +751,24 @@ function openViewer(i){
   if (!list.length) return;
   if (!viewer || !viewerImg || !viewerMeta) { window.open(list[i].src, '_blank'); return; }
   idx = Math.max(0, Math.min(i, list.length-1));
-  AlbumIdx.current = idx;
+  AlbumIdx.current = idx;                        // 共有インデックス更新
   const it = list[idx];
   viewerImg.src = it.src;
 
   viewerMeta.textContent = buildMetaText(it, idx, list.length);
   resetViewerTransform();
-  viewer.setAttribute('aria-hidden', 'false');
+  viewer.setAttribute('aria-hidden', 'false');   // 開く
 
   if (viewerNote) viewerNote.value = it.note || '';
-  showSaveBtn();
+  showSaveBtn();                                  // 拡大時だけ表示
 }
 
 function closeViewer(){
   if (viewer){
-    viewer.setAttribute('aria-hidden', 'true');
+    viewer.setAttribute('aria-hidden', 'true');  // 閉じる
   }
   AlbumIdx.current = -1;
-  hideSaveBtn();
+  hideSaveBtn();                                  // 必ず隠す
 }
 
 // UI結線
@@ -840,7 +839,7 @@ viewerWrap && viewerWrap.addEventListener('touchstart', e => {
   closeModal,
   openViewer,
   save,
-  get list() { return list; }
+  get list() { return list; }   // ← これ！
 };
   })();
 
@@ -923,7 +922,7 @@ let lat = null, lon = null;
 // ※ どうしても付けたい場合は別ボタンなど“ユーザー操作時”にだけ取得する
 
 // データURL（アルバム保存用）
-const JPEG_QUALITY = 0.85;
+const JPEG_QUALITY = 0.85;               // 0.8〜0.9くらいが実用
 const dataUrl = captureCanvas.toDataURL('image/jpeg', JPEG_QUALITY);
 
 // アルバムへ即追加（永続化）
@@ -984,7 +983,7 @@ Album.add(item);
   }
 
   // ====== 初期表示 ======
-  Album.load();
+  Album.load();                 // ← 過去の写真を復元（新旧フォーマット対応）
   // ギャラリーを開くボタンは Album 側で結線済み
   showScreen('initial');
 });
