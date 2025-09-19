@@ -1,0 +1,352 @@
+/* =========================
+   Base
+========================= */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  font-family: "Hiragino Kaku Gothic ProN", "ヒラギノ角ゴ ProN W3",
+               "Yu Gothic", "YuGothic", "Meiryo", sans-serif;
+  background: #f0f0f0;
+}
+* { box-sizing: border-box; }
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  touch-action: none;          /* 全面アプリ挙動（ピンチ等はJSで制御） */
+  overscroll-behavior: none;
+}
+
+/* =========================
+   App container (端末比率に追従)
+========================= */
+.app-container {
+  width: 100%;
+  height: 100%;
+  max-width: 420px;
+  aspect-ratio: 375 / 812;     /* iPhone系の比率基準でスケーリング */
+  background: #fff;
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+
+  /* iOS安全領域（上下左右） */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* =========================
+   Screens
+========================= */
+.screen {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  text-align: center; padding: 20px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .4s ease;
+}
+.screen.active { opacity: 1; pointer-events: auto; }
+
+h1 { font-size: 2.3rem; font-weight: 800; color: #333; margin: 0 0 10px; }
+h2 { font-size: 1.7rem; font-weight: 700; color: #444; margin: 0 0 10px; }
+p  { font-size: 1rem; color: #666; line-height: 1.6; margin: 0 0 8px; }
+
+/* =========================
+   Buttons
+========================= */
+button {
+  padding: 14px 28px; font-size: 16px; font-weight: 700;
+  border-radius: 999px; cursor: pointer;
+  background: #111; color: #fff; border: none;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  transition: transform .15s, box-shadow .15s, opacity .15s;
+}
+button:hover { transform: translateY(-1px); box-shadow: 0 6px 15px rgba(0,0,0,0.28); }
+button:active { transform: translateY(0); }
+button.secondary { background: #ececec; color: #222; }
+button:focus-visible { outline: 3px solid #5aa9ff; outline-offset: 2px; }
+
+/* カメラ画面のボタンは改行させない */
+.camera-btn,
+#camera-switch-btn,
+#camera-shutter-btn,
+#camera-info-btn {
+  white-space: nowrap;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* =========================
+   F値入力
+========================= */
+#screen-fvalue-input { display: flex; flex-direction: column; }
+.f-value-title-container { width: 100%; padding-top: 8px; }
+.aperture-control-container {
+  display: flex; justify-content: center; align-items: center; flex: 1; width: 100%;
+}
+.description-text-container { display: flex; flex-direction: column; align-items: center; padding-bottom: 12px; gap: 8px; }
+.f-value-title { font-size: 1.1rem; font-weight: 600; color: #555; }
+
+/* 円：重複定義を統合・高速化 */
+.aperture-control {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  transition: width 90ms ease-out, height 90ms ease-out; /* 機敏に */
+  will-change: width, height, transform;
+  transform: translateZ(0); /* GPUヒント */
+}
+.aperture-ring {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 4px solid #2A9858;
+  background: #2A9858;
+  box-shadow:
+    inset 0 0 10px rgba(0,0,0,0.25),
+    0 5px 15px rgba(0,0,0,0.25);
+}
+.aperture-value {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  font-size: 2.3rem; font-weight: 800; color: #fff;
+}
+
+/* =========================
+   BPM計測
+========================= */
+#screen-bpm { background: #fff; color: #222; }
+#screen-bpm h2 { color: #000; }
+.bpm-instruction { color: #444; }
+
+/* ラッパーに枠（外側のみ） */
+.bpm-video-wrapper {
+  width: 80%;
+  max-width: 320px;
+  aspect-ratio: 4/3;
+  border: 4px solid #D30000;   /* 赤枠 */
+  border-radius: 12px;         /* 角丸 */
+  margin: 12px 0;
+  background: #fff;            /* 背景は白 */
+  overflow: hidden;            /* videoのはみ出し防止 */
+}
+/* videoは枠なし */
+#bpm-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border: none;
+  border-radius: 0;
+  background: none;
+  margin: 0;
+}
+
+/* ステータス */
+#bpm-status { color: #444; margin: 6px 0 12px; }
+
+.bpm-actions {
+  position: relative;
+  width: 100%;
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;   /* 計測開始ボタンを中央に */
+  align-items: center;
+}
+/* 計測開始ボタン → 常に中央 */
+#bpm-start-btn { margin: 0 auto; z-index: 1; }
+/* スキップボタン → 画面右端に固定 */
+#bpm-skip-btn {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  padding: 8px 14px;
+}
+
+/* =========================
+   Camera
+========================= */
+#screen-camera { background: #000; }
+#video {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; z-index: 1;
+}
+#canvas { display: none; }
+
+/* プレビューキャンバス（ビデオの上、UIの下） */
+#preview-canvas{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;            /* .camera-ui(z-index:2) の下 */
+  pointer-events: none;  /* タップ/スワイプをブロックしない */
+}
+
+.camera-ui {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  justify-content: space-between; align-items: center;
+  padding: 16px; z-index: 2;
+
+  /* iOS安全領域 */
+  padding-top: calc(16px + env(safe-area-inset-top));
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
+.camera-ui-top {
+  width: 100%; display: flex; justify-content: space-between; padding: 10px 12px;
+  color: #fff; font-weight: 700; text-shadow: 1px 1px 2px rgba(0,0,0,.5);
+  background: linear-gradient(to bottom, rgba(0,0,0,.45), transparent);
+  border-radius: 10px;
+}
+.camera-ui-bottom {
+  width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 16px 10px;
+}
+#camera-shutter-btn {
+  padding: 18px 36px; border: 3px solid #fff; background: rgba(255,255,255,.3); color: #fff;
+  font-size: 1.1rem; font-weight: 800; backdrop-filter: blur(5px);
+}
+
+#camera-gallery {
+  position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 10px; max-width: 92%; overflow-x: auto; padding: 5px; z-index: 10;
+}
+#camera-gallery img { border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,.25); transition: transform .15s; }
+#camera-gallery img:hover { transform: scale(1.05); }
+
+/* =========================
+   Modal / Gallery
+========================= */
+.hidden { display: none !important; }
+.cc-modal.hidden[aria-hidden="true"] { display: none; }
+.cc-modal:not(.hidden)[aria-hidden="false"] { display: block; }
+.cc-modal { position: fixed; inset: 0; z-index: 5000; }
+.cc-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.6); }
+.cc-modal-panel {
+  position: absolute; inset: 6% 4% auto; bottom: 6%;
+  background: rgba(20,20,20,.95); color: #fff; border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.2); overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.cc-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.15);
+}
+#gallery-grid.cc-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(90px,1fr));
+  gap: 8px; padding: 10px; overflow: auto; max-height: 60vh; -webkit-overflow-scrolling: touch;
+}
+.cc-thumb {
+  background:#111; border:1px solid rgba(255,255,255,.25); border-radius:8px;
+  padding:4px; cursor:pointer; display:flex; flex-direction:column; gap:4px;
+}
+.cc-thumb img { width:100%; height:auto; border-radius:4px; display:block; }
+.cc-thumb .meta { font-size:12px; line-height:1.2; white-space:pre-wrap; color:#ddd; }
+
+/* =========================
+   Lightbox Viewer
+========================= */
+#viewer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 9999; }
+#viewer-img-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+#viewer-img { max-width: 100%; max-height: 100%; touch-action: none; will-change: transform; }
+
+#viewer-ui {
+  position: absolute; left: 0; right: 0; top: 0;
+  display: flex; justify-content: space-between; align-items: center; padding: 10px 12px;
+}
+#viewer-meta {
+  position: absolute; left: 12px; bottom: 12px;
+  background: rgba(0,0,0,.5); border: 1px solid #fff; border-radius: 8px;
+  padding: 8px 10px; font-size: 14px; white-space: pre-wrap;
+}
+
+.viewer-btn {
+  background: rgba(255,255,255,.12); border: 1px solid #fff; color: #fff;
+  padding: 10px 12px; border-radius: 10px; cursor: pointer; user-select: none;
+}
+.viewer-btn:focus-visible {
+  outline: 3px solid #5aa9ff;
+  outline-offset: 2px;
+}
+#viewer-prev, #viewer-next { position: absolute; top: 50%; transform: translateY(-50%); }
+#viewer-prev { left: 10px; }
+#viewer-next { right: 10px; }
+
+/* === メモUI（JSで要素生成される想定） === */
+#viewer-note {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 64px;          /* メタ枠(#viewer-meta)の少し上 */
+  min-height: 84px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.35);
+  background: rgba(0,0,0,.55);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.4;
+  backdrop-filter: blur(4px);
+}
+
+/* 保存フローティングボタン（JSで生成/表示切替） */
+.floating-save-btn{
+  position: fixed;
+  right: max(24px, env(safe-area-inset-right) + 12px);
+  bottom: max(24px, env(safe-area-inset-bottom) + 12px);
+  padding: 10px 16px;           /* 可変幅 */
+  min-width: 64px;
+  height: 44px;                 /* タップしやすさ */
+  border-radius: 999px;         /* ピル型 */
+  background: #fff;
+  color: #000;
+  font-size: 15px;
+  font-weight: 700;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  cursor: pointer;
+  z-index: 10050;               /* overlay(9999)より上 */
+  display: none;                /* 初期は非表示。JSで切替 */
+}
+.floating-save-btn:active {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  transform: scale(0.96);
+}
+.floating-save-btn.is-visible { display: block; }
+
+.floating-save-btn:focus-visible {
+  outline: 3px solid #5aa9ff;
+  outline-offset: 2px;
+}
+
+/* =========================
+   Dark mode
+========================= */
+@media (prefers-color-scheme: dark) {
+  body { background: #0f0f12; }
+}
+
+/* =========================
+   Reduced motion
+========================= */
+@media (prefers-reduced-motion: reduce) {
+  .aperture-control { transition: none; }
+  .screen { transition: none; }
+  button { transition: none; }
+}
+
+/* ARIAでの表示切替 */
+#viewer-overlay[aria-hidden="true"] { display: none; }
+#viewer-overlay[aria-hidden="false"] { display: block; }
