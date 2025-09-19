@@ -502,9 +502,16 @@ document.getElementById('f-value-decide-btn')?.addEventListener('click', async (
  // ⑤ 保存画像向け：方向性モーションブラー（少ないパスで派手＆軽量）
 function applyMotionBlurAfterCapture(ctx, video, w, h, bpm, facing, brightnessFilterCSS) {
   const B = Math.max(60, Math.min(100, bpm || 60));
-  const t = (100 - B) / 40;              // 60→1, 100→0
-  const passes = 1 + Math.round(t * 6);  // 最大7パス
+  const t = (100 - B) / 40;              
+  // t: 60BPM→1、100BPM→0
+
+  // 📸 パス数：低BPMで最大7枚、高BPMで1枚
+  const passes = 1 + Math.round(t * 6);  
+  // 📸 オフセット量も低BPMで大きく
   const maxOffset = Math.round((w + h) * 0.006 * (0.5 + t));
+
+  // 📸 ブラー強さ：60BPM→5px、100BPM→0px
+  const blurRadius = Math.round(5 * t);
 
   const angle = Math.random() * Math.PI * 2;
   const dxUnit = Math.cos(angle);
@@ -513,18 +520,18 @@ function applyMotionBlurAfterCapture(ctx, video, w, h, bpm, facing, brightnessFi
   const useCanvasFilter = CANVAS_FILTER_SUPPORTED && brightnessFilterCSS;
   const prevFilter = ctx.filter;
 
-  // 💡ここでBPMに応じてblur半径を決定（低BPM→大きい）
-  const blurRadius =  Math.round(5 * t); // 60BPM→5px、100BPM→0px
+  // 🎨 フィルター設定
   if (blurRadius > 0) {
     ctx.filter = `blur(${blurRadius}px)` + (useCanvasFilter ? ` ${brightnessFilterCSS}` : '');
   } else if (useCanvasFilter) {
     ctx.filter = brightnessFilterCSS;
   }
 
-  ctx.globalAlpha = 1 / (passes + 1);
+  ctx.globalAlpha = 1 / passes;
 
-  for (let i = 1; i <= passes; i++) {
-    const k = i / passes;
+  // 📷 実際の重ね描画（高BPMなら1枚だけ）
+  for (let i = 0; i < passes; i++) {
+    const k = passes === 1 ? 0 : i / (passes - 1);
     const offset = Math.round(maxOffset * (k * k));
     const dx = Math.round(dxUnit * offset);
     const dy = Math.round(dyUnit * offset);
@@ -542,7 +549,6 @@ function applyMotionBlurAfterCapture(ctx, video, w, h, bpm, facing, brightnessFi
   ctx.globalAlpha = 1;
   ctx.filter = prevFilter || 'none';
 }
-
 
   // ====== ファイル名 ======
   function safeNum(n) { return String(n).replace('.', '-'); }
