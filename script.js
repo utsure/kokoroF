@@ -642,7 +642,7 @@ function hideSaveBtn() { viewerNoteSave?.classList.remove('is-visible'); }
 function buildMetaText(it, i, total){
   // 撮影順番号：古いほど小さい番号 → oldest=1, newest=total
   const order = total - i;
-  const bpmStr = (typeof it.bpm === 'number' && it.bpm >= 0) ? `${it.bpm} BPM` : `BPM ---`;
+  const bpmStr = (typeof it.bpm === 'number' && it.bpm >= 0) ? `${it.bpm} BPM` : `--- BPM`;
   return `#${order}　F${Math.round(it.f)}　${bpmStr}`;
 }
 
